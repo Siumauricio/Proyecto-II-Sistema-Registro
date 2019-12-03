@@ -1,66 +1,135 @@
 #include "PlanEstudio.h"
-PlanEstudio::PlanEstudio():raiz(0){}
+#include <queue>
+#include<Windows.h>
+PlanEstudio::PlanEstudio ():raiz (nullptr) {}
 
-bool PlanEstudio::estaVacio(){
+bool PlanEstudio::estaVacio () {
 	return raiz == 0;
 }
-
-void PlanEstudio::agregarMateria (string codigo,string nombre,int uv,string CodigoPadre) {
-	Materia *nueva = new Materia (codigo,nombre,uv);
+void PlanEstudio::agregar (string codigo,string nombre,int uv,string CodigoPadre) {
+	materia *nueva = new materia (codigo,nombre,uv,CodigoPadre);
 	if(estaVacio ()) {
-		raiz = nueva;
+		materia **tmpHijos = new materia * [1];
+		tmpHijos[0] = nueva;
+		raiz = tmpHijos;
 		return;
+	} else {
+		if(CodigoPadre.empty ()) {
+			(*raiz)->posicion += 1;
+			materia **tmpHijos = new materia * [1];
+			tmpHijos[0] = nueva;
+			raiz[(*raiz)->posicion] = nueva;
+			return;
+		}
+		if(buscar2 (codigo) == 0) {
+			materia **tmpHijos = buscar (CodigoPadre);
+			if(tmpHijos == nullptr) {
+				return;
+			}
+			materia **tmpHijos2 = new materia * [1];
+			tmpHijos2[0] = nueva;
+			(*tmpHijos)->hijos.push_back (tmpHijos2[0]);
+			tmpHijos[0]->cantHijos++;
+		} else {
+			materia **tmpHijos = buscar (CodigoPadre);
+			if(tmpHijos == nullptr) {
+				return;
+			}
+			materia **tmpHijos2 = new materia * [1];
+			(*tmpHijos)->hijos.push_back ((*buscar (codigo)));
+			tmpHijos[0]->cantHijos++;
+		}
 	}
-	Materia *padre = buscar (CodigoPadre);
-	if(padre == 0) {
-		cout << "Codigo de clase requisisto incorrecto!";
-		delete nueva;
-		return;
-	}
-	//crear copia de hijos
-	Materia **tmpHijos = new Materia * [padre->cantHijos + 1]; //declarando un arreglo de apuntadores
-	for(int i = 0; i < padre->cantHijos; i++) {
-		tmpHijos[i] = padre->hijos[i];
-	}
-	tmpHijos[padre->cantHijos] = nueva;
-
-	if(padre->cantHijos != 0) {
-		delete padre->hijos;
-	}
-	padre->cantHijos++;
-	padre->hijos = tmpHijos;
-	cout << "Materia Ingresada!" << endl;
 }
-Materia* PlanEstudio::buscar(string codigoPadre){
-	return buscarRec(raiz,codigoPadre);
-	
-}
-Materia *PlanEstudio::buscarRec (Materia *raiz,string codigoPadre){
-	if(raiz==0) {
+materia *PlanEstudio::buscar2 (string codigoPadre) {
+	if(raiz == 0) {
 		return 0;
-	}
-	if(raiz->codigo==codigoPadre) {
-		return raiz;
-	}
-	for(int i = 0; i < raiz->cantHijos; i++) {
-		Materia *tmp = buscarRec (raiz->hijos[i],codigoPadre);
-		if(tmp!=0) {
-			return tmp;
+	} else {
+		cout << endl;
+		//cout << &*raiz << "  Codigo: " << (*raiz)->codigo << ",Nombre : " << (*raiz)->nombre << " Padre : " << (*raiz)->padre << " Memoria: " << endl;
+		for(int i = 0; i <= (*raiz)->posicion; i++) {
+			if(&raiz[i] != nullptr) {
+				//cout << &*raiz << " " << raiz[i]->nombre << endl;
+				if(buscarRec2 (&(*raiz[i]),codigoPadre) != nullptr) {
+					return buscarRec2 (raiz[i],codigoPadre);
+				}
+			}
 		}
 	}
 	return 0;
+}
 
-}
-void PlanEstudio::imprimir(){
-	ImprimirRec (raiz);
-}
-void PlanEstudio::ImprimirRec(Materia*raiz){
-	if(raiz==0) {
-		return;
-	}else{
-		cout << "Materia {Codigo: " << raiz->codigo << ", Nombre: " << raiz->nombre << " }\n";
-		for(int i = 0; i < raiz->cantHijos; i++) {
-			ImprimirRec (raiz->hijos[i]);
+materia *PlanEstudio::buscarRec2 (materia *raiz,string codigoPadre) {
+	int x = sizeof (raiz);
+	if(raiz == 0) {
+		return 0;
+	}
+	if(raiz->codigo == codigoPadre) {
+		return raiz;
+	}
+	///cout << &*raiz << " " << (*raiz)->nombre << endl;
+	for(int i = 0; i < raiz->cantHijos; i++) {
+		materia *tmp = buscarRec2 (raiz->hijos[i],codigoPadre);
+		if(tmp != 0) {
+			return tmp;
 		}
 	}
+
+	return 0;
+
 }
+
+
+materia **PlanEstudio::buscar (string codigoPadre) {
+	if(raiz == 0) {
+		return 0;
+	} else {
+		cout << endl;
+		//cout << &*raiz << "  Codigo: " << (*raiz)->codigo << ",Nombre : " << (*raiz)->nombre << " Padre : " << (*raiz)->padre << " Memoria: " << endl;
+		for(int i = 0; i <= (*raiz)->posicion; i++) {
+			//cout << &*raiz << " " << raiz[i]->nombre << endl;
+			if(buscarRec (&raiz[i],codigoPadre) != nullptr) {
+				return buscarRec (&raiz[i],codigoPadre);
+			}
+		}
+	}
+	return 0;
+}
+materia **PlanEstudio::buscarRec (materia **raiz,string codigoPadre) {
+	int x = sizeof (raiz);
+	if(raiz == 0) {
+		return 0;
+	}
+	if((*raiz)->codigo == codigoPadre) {
+		return raiz;
+	}
+	///cout << &*raiz << " " << (*raiz)->nombre << endl;
+	for(int i = 0; i < (*raiz)->cantHijos; i++) {
+		materia **tmp = buscarRec (&(*raiz)->hijos[i],codigoPadre);
+		if(tmp != 0) {
+			return tmp;
+		}
+	}
+
+	return 0;
+
+}
+
+
+void PlanEstudio::imprimir () {
+	for(int i = 0; i <= (*raiz)->posicion; i++) {
+		ImprimirRec (&raiz[i]);
+	}
+	// do stuff that may throw or fail
+}
+
+void PlanEstudio::ImprimirRec (materia **raiz) {
+	if(raiz == 0) {
+		return;
+	}
+	cout << *raiz << " Materia { codigo: " << (*raiz)->codigo << ", Nombre: " << (*raiz)->nombre << "}" << endl;
+	for(int i = 0; i < (*raiz)->cantHijos; i++) {
+		ImprimirRec (&(*raiz)->hijos[i]);
+	}
+}
+
