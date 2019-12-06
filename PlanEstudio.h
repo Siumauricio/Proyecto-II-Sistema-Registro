@@ -4,23 +4,21 @@
 #include <iostream>
 #include <vector>
 using namespace std;
-struct Materia {
+struct MateriaFile {
 	char codigo[7];
 	char nombre[45];
-	char nombreHijos[25];
+	char nombreHijos[25]="";
 	int uv;
 	int cantHijos;
-	Materia **hijos;
-	Materia (string _codigo,string _nombre,int uv,int cantHijos) {
+	MateriaFile (string _codigo,string _nombre,int uv,int cantHijos) {
 		strcpy (codigo,_codigo.c_str ());
 		strcpy (nombre,_nombre.c_str ());
+		
 		this->uv = uv;
 		this->cantHijos = cantHijos;
-		hijos = 0;
 	}
-	Materia () {}
+	MateriaFile () {}
 };
-
 struct materia {
 	string codigo;
 	string nombre;
@@ -37,8 +35,8 @@ struct materia {
 		cantHijos = 0;
 		posicion = 0;
 	}
-};
 
+};
 
 class PlanEstudio {
 private:
@@ -52,6 +50,15 @@ public:
 	void agregar (string codigo,string nombre,int uv,string CodigoPadre);
 	materia **buscar (string);
 	materia *buscar2 (string);
+	vector<materia*>clases;
 	void imprimir ();
+	void ClasesDisponibles ();
+	bool yaAprobo (string);
+	void yaAproboSinReq (materia**);//caso para las clases sin req
+	void yaAproboIdiomas (materia **,int);
+	void yaAproboSubHijos (materia **);
+	void padre (string);
+	vector<materia*> padres (materia *,string);
+	bool verificarAprobadas(int);
 };
 #endif // !PLAN_ESTUDIO_H
