@@ -10,6 +10,42 @@
 #include <algorithm>
 using namespace std;
 Archivo::Archivo () {}
+vector<string>arr;
+PlanEstudio plan;
+
+void Archivo::Menu () {
+	bool cerrar = true;
+
+	int opcion = 0;
+	do {
+		cout << "1. Crear Plan de estudio " << endl;
+		cout << "2. Iniciar / Cerrar Inscripcion de clases" << endl;
+		cout << "3.Informacion Academica" << endl;
+		cout << "4. Salir del Sistema" << endl;
+		cout << "Ingrese Opcion: ";
+		cin >> opcion;
+		switch(opcion) {
+		case 1:
+			break;
+
+		case 2:
+			CrearPlanEstudio ();
+			for(int i = 0; i < 3; i++) {
+				plan.ClasesDisponibles ();
+				cout << "Ingrese la clase a matricular: ";
+				cin >> opcion;
+			}
+			break;
+		case 3:
+			break;
+		case 4:
+			break;
+		}
+
+	} while(cerrar);
+
+}
+
 int Archivo::cantidadHijos (string nombre) {
 	int Hijos (0);
 	stringstream ss (nombre);
@@ -34,28 +70,131 @@ void Archivo::CrearPlanEstudio () {
 		archivoE.write (reinterpret_cast<const char *>(&nuevo),sizeof (Matricula));
 	}
 	archivoE.close ();
+	LeerPlanEstudio ("h",0);
+	//plan.ClasesDisponibles ();
+	//plan.padre ("MAT102");
+	//cout<<plan.verificarAprobadas (0);
+
+	//clasesR ("",0);
 }
-void Archivo::LeerPlanEstudio () {
-	ifstream archivoE ("PlanDeEstudio.dat",ios::binary);
-	if(!archivoE) {
-		cout << "Error al Leer el archivo";
+bool caso1 = true;//Extrae El Padre y lo agrega al arbol
+bool caso2 = false;//agrega sus hijos a un vector y dicho vector se recorre recursivamente
+void Archivo::LeerPlanEstudio (string codigo,int posicion) {
+	Matricula lectura{0};
+	for(int i = 0; i < size (Estructura); i++) {
+		if(caso1) {
+			stringstream ss (Estructura[i].nombreHijos);
+			string word;
+			plan.agregar (Estructura[i].codigo,Estructura[i].nombre,Estructura[i].uv,"");
+			while(ss >> word) {
+				arr.push_back (obtenerClase (word).codigo);
+				plan.agregar (word.c_str (),obtenerClase (word).nombre,obtenerClase (word).uv,Estructura[i].codigo);
+			}
+			caso1 = false;
+			caso2 = true;
+		}if(caso2) {
+			if(strcmp (Estructura[i].codigo,codigo.c_str ()) == 0) {
+				stringstream ss (Estructura[i].nombreHijos);
+				string word;
+				if(Estructura[i].nombreHijos != "") {
+					while(ss >> word) {
+						if(obtenerClase (word).uv != 0) {
+							arr.push_back (obtenerClase (word).codigo);
+							plan.agregar (word.c_str (),obtenerClase (word).nombre,obtenerClase (word).uv,codigo.c_str ());
+						}
+					}
+				}
+			}
+		}
+	}
+	if(posicion < arr.size ()) {
+		auto end = arr.end ();
+		for(auto it = arr.begin (); it != end; ++it) {
+			end = std::remove (it + 1,end,*it);
+		}
+		arr.erase (end,arr.end ());
+		LeerPlanEstudio (arr[posicion],posicion + 1);
+	} else {
+		LeerPlan2 ("",0);
 		return;
 	}
-	archivoE.seekg (0,ios::beg);
-	Matricula lectura;
-	archivoE.read (reinterpret_cast<char *>(&lectura),sizeof (Matricula));
-	while(!archivoE.eof ()) {
-		cout << "Codigo: " << lectura.codigo << endl;
-		cout << "Nombre: " << lectura.nombre << endl;
-		cout << "UV: " << lectura.uv << endl;
-		cout << "Status: " << lectura.status << endl;
-		cout << "Nota: " << lectura.nota << endl;
-		cout << "-------------------" << endl;
-		archivoE.read (reinterpret_cast<char *>(&lectura),sizeof (Matricula));
-	}
-	archivoE.close ();
 }
-bool caso1 = true;
+bool case3 = true;//Caso para las clases sin requisito
+bool case4 = false;//Caso para los idiomas
+bool case5 = false;
+
+vector<MateriaFile>SinRequisitos;
+vector<string>Idiomas;
+vector<string>Hijos;
+void Archivo::LeerPlan2 (string codigo,int posicion) {
+	//clases sin requisito
+	if(case3) {
+		bool primero = true;
+		for(int i = 0; i < size (Estructura); i++) {
+			if(codigoRepetido (Estructura[i].codigo) == 1 && cantidadHijos (Estructura[i].nombreHijos) == 0) {
+				if(primero) {
+					plan.agregar (Estructura[i].codigo,Estructura[i].nombre,Estructura[i].uv,"");
+					primero = false;
+				}
+				SinRequisitos.push_back (Estructura[i]);
+			}
+		}
+		int pos = 0;
+		for(int i = 1; i < SinRequisitos.size (); i++) {
+			plan.agregar (SinRequisitos[i].codigo,SinRequisitos[i].nombre,SinRequisitos[i].uv,SinRequisitos[pos].codigo);
+			pos++;
+		}
+		case3 = false;
+		case4 = true;
+	}
+	//clases de idioma
+	for(int i = 0; i < size (Estructura); i++) {
+		if(case4) {
+			if(codigoRepetido (Estructura[i].codigo) == 1 && cantidadHijos (Estructura[i].nombreHijos) == 1) {
+				plan.agregar (Estructura[i].codigo,Estructura[i].nombre,Estructura[i].uv,"");
+				Idiomas.push_back (Estructura[i].codigo);
+				case4 = false;
+				case5 = true;
+			}
+		}
+		if(case5) {
+			if(strcmp (Estructura[i].codigo,codigo.c_str ()) == 0) {
+				stringstream ss (Estructura[i].nombreHijos);
+				string word;
+				if(Estructura[i].nombreHijos != "") {
+					while(ss >> word) {
+						if(obtenerClase (word).uv != 0) {
+							Idiomas.push_back (word);
+							plan.agregar (word.c_str (),obtenerClase (word).nombre,obtenerClase (word).uv,codigo.c_str ());
+						}
+					}
+				}
+			}
+		}
+	}
+	if(posicion < Idiomas.size ()) {
+		LeerPlan2 (Idiomas[posicion],posicion + 1);
+	} else {
+		plan.imprimir ();
+		return;
+	}
+}
+
+MateriaFile Archivo::obtenerHijos (string codigo) {
+	guardarInformacion ();
+	ifstream archivoH ("PlanDeEstudio.dat",ios::binary);
+	MateriaFile lectura;
+	archivoH.seekg (0,ios::beg);
+	archivoH.read (reinterpret_cast<char *>(&lectura),sizeof (MateriaFile));
+	while(!archivoH.eof ()) {
+		if(strcmp (codigo.c_str (),lectura.codigo) == 0) {
+			return lectura;
+		}
+		archivoH.read (reinterpret_cast<char *>(&lectura),sizeof (MateriaFile));
+	}
+	MateriaFile lectura2{};
+	return lectura2;
+}
 
 int Archivo::codigoRepetido (string codigo) {
 	guardarInformacion ();
@@ -76,7 +215,7 @@ int Archivo::codigoRepetido (string codigo) {
 	return contador;
 }
 
-bool Archivo::yaAprobo (string codigo,int cantidad) {
+bool Archivo::yaAproboHijos (string codigo,int cantidad) {
 	int contador = 0;
 	for(int i = 0; i < size (Estructura); i++) {
 		stringstream ss (Estructura[i].nombreHijos);
@@ -95,56 +234,53 @@ bool Archivo::yaAprobo (string codigo,int cantidad) {
 }
 
 void Archivo::ClasesDisponibles () {
-	if(caso1) {
-
-		guardarInformacion ();
-		vector<Matricula>aprobadas;
-		for(int i = 0; i < size (Estructura); i++) {
-			if(codigoRepetido (Estructura[i].codigo) == 1 && !claseAprobada (Estructura[i].codigo)) {
+	guardarInformacion ();
+	vector<Matricula>aprobadas;
+	for(int i = 0; i < size (Estructura); i++) {
+		if(codigoRepetido (Estructura[i].codigo) == 1 && !claseAprobada (Estructura[i].codigo)) {
+			aprobadas.push_back (obtenerClase (Estructura[i].codigo));
+		} else if(codigoRepetido (Estructura[i].codigo) > 2) {
+			if(yaAproboHijos (Estructura[i].codigo,codigoRepetido (Estructura[i].codigo)) && !claseAprobada (Estructura[i].codigo)) {
 				aprobadas.push_back (obtenerClase (Estructura[i].codigo));
-			} else if(codigoRepetido (Estructura[i].codigo) > 2) {
-				if(yaAprobo (Estructura[i].codigo,codigoRepetido (Estructura[i].codigo))&&!claseAprobada(Estructura[i].codigo)) {
-						aprobadas.push_back (obtenerClase (Estructura[i].codigo));
-				}
-			} 
+			}
 		}
-		for(int i = 0; i < size (Estructura); i++) {
-				if(claseAprobada (Estructura[i].codigo)) {
-					stringstream ss (Estructura[i].nombreHijos);
-					string word;
-					while(ss >> word) {
-						if(word.empty ()) {
-							break;
-						} else {
-							if(!claseAprobada (word)&& codigoRepetido (word) ==2) {
-								bool existe = true;
-								for(int i = 0; i < aprobadas.size (); i++) {
-									if(strcmp (aprobadas[i].codigo,word.c_str ()) == 0) {
-										existe = false;
-									}
-								}
-								if(existe) {
-									aprobadas.push_back (obtenerClase (word));
-								}
+	}
+	for(int i = 0; i < size (Estructura); i++) {
+		if(claseAprobada (Estructura[i].codigo)) {
+			stringstream ss (Estructura[i].nombreHijos);
+			string word;
+			while(ss >> word) {
+				if(word.empty ()) {
+					break;
+				} else {
+					if(!claseAprobada (word) && codigoRepetido (word) == 2) {
+						bool existe = true;
+						for(int i = 0; i < aprobadas.size (); i++) {
+							if(strcmp (aprobadas[i].codigo,word.c_str ()) == 0) {
+								existe = false;
 							}
 						}
+						if(existe) {
+							aprobadas.push_back (obtenerClase (word));
+						}
+					}
 				}
 			}
 		}
-		cout << endl;
-		for(int i = 0; i < aprobadas.size (); i++) {
-			if(strcmp (aprobadas[i].codigo,"") != 0) {
-				cout << i << ". " << aprobadas[i].codigo << " | ";
-				cout << " " << aprobadas[i].nombre << " | ";
-				cout << " " << aprobadas[i].uv << " | ";
-				cout << endl;
-			}
-		}
-		int posicion = 0;
-		cout << "Escriba la Clase a Matricular: ";
-		cin >> posicion;
-		MatricularClases (aprobadas[posicion].codigo,aprobadas[posicion].nombre,aprobadas[posicion].uv);
 	}
+	cout << endl;
+	for(int i = 0; i < aprobadas.size (); i++) {
+		if(strcmp (aprobadas[i].codigo,"") != 0) {
+			cout << i << ". " << aprobadas[i].codigo << " | ";
+			cout << " " << aprobadas[i].nombre << " | ";
+			cout << " " << aprobadas[i].uv << " | ";
+			cout << endl;
+		}
+	}
+	int posicion = 0;
+	cout << "Escriba la Clase a Matricular: ";
+	cin >> posicion;
+	MatricularClases (aprobadas[posicion].codigo,aprobadas[posicion].nombre,aprobadas[posicion].uv);
 }
 
 
@@ -271,7 +407,6 @@ void Archivo::guardarInformacion () {
 	smatch match3;
 	smatch match4;
 	while(!in.eof ()) {
-
 		if(!in.is_open ()) {
 			cerr << "File can't be opened! " << endl;
 			return;
