@@ -15,7 +15,7 @@ struct Matricula {
 
 class Archivo {
 public:
-	Materia Estructura[21];
+	MateriaFile Estructura[21];
 	Archivo ();
 	void ClasesDisponibles ();
 	void MatricularClases (string,string,int);
@@ -23,14 +23,17 @@ public:
 	string obtenerCarrera ();
 	void historialAcademico ();
 	int cantidadHijos (string);
-	void LeerPlanEstudio ();
+	void LeerPlanEstudio (string,int);
 	void CrearPlanEstudio ();
 	int codigoRepetido (string);
-	bool yaAprobo (string,int);
+	bool yaAproboHijos (string,int);
 	Matricula obtenerClase (string);
+	MateriaFile obtenerHijos (string);
+	void LeerPlan2 (string ,int);
+	void Menu ();
 private:
 	bool claseAprobada (string);
 	void guardarInformacion ();
-
+	void clasesR (string,int);
 };
 #endif // !ARCHIVO_H
