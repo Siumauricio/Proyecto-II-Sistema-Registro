@@ -15,9 +15,18 @@ struct Matricula {
 
 class Archivo {
 public:
+	bool caso1 = true;//Extrae El Padre y lo agrega al arbol
+	bool caso2 = false;//agrega sus hijos a un vector y dicho vector se recorre recursivamente
+	bool case3 = true;//Caso para las clases sin requisito
+	bool case4 = false;//Caso para los idiomas
+	bool case5 = false;
+	vector<MateriaFile>SinRequisitos;
+	vector<string>Idiomas;
+	vector<string>Hijos;
+	vector<string>arr;
+	PlanEstudio plan;
 	MateriaFile Estructura[21];
 	Archivo ();
-	void ClasesDisponibles ();
 	void MatricularClases (string,string,int);
 	void modificarNota (string,int);
 	string obtenerCarrera ();
