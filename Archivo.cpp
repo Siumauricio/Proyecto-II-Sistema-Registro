@@ -10,38 +10,41 @@
 #include <algorithm>
 using namespace std;
 Archivo::Archivo () {}
-vector<string>arr;
-PlanEstudio plan;
-
 void Archivo::Menu () {
 	bool cerrar = true;
-
 	int opcion = 0;
 	do {
+		Archivo a;
+		a.CrearPlanEstudio ();
 		cout << "1. Crear Plan de estudio " << endl;
 		cout << "2. Iniciar / Cerrar Inscripcion de clases" << endl;
-		cout << "3.Informacion Academica" << endl;
-		cout << "4. Salir del Sistema" << endl;
+		cout << "3. Finalizar Periodo" << endl;
+		cout << "4.Informacion Academica" << endl;
+		cout << "5. Salir del Sistema" << endl;
 		cout << "Ingrese Opcion: ";
 		cin >> opcion;
 		switch(opcion) {
 		case 1:
 			break;
-
 		case 2:
-			CrearPlanEstudio ();
-			for(int i = 0; i < 3; i++) {
-				plan.ClasesDisponibles ();
-				cout << "Ingrese la clase a matricular: ";
-				cin >> opcion;
-			}
+			a.plan.ClasesDisponibles();
+			a.plan.MatricularClases ();
+			cout << "\n\n";
 			break;
 		case 3:
+			cout << "\nFinalizando Periodo Ingrese las Notas: " << endl;
+			a.plan.subirNota ();
+			cout << "\n\n";
 			break;
 		case 4:
+			cout << "\n\n--------HISTORIAL ACADEMICO---------\n\n";
+			a.historialAcademico ();
+			cout << "\n\n";
+			break;
+		case 5:
+			cerrar = false;
 			break;
 		}
-
 	} while(cerrar);
 
 }
@@ -69,16 +72,14 @@ void Archivo::CrearPlanEstudio () {
 		nuevo.status = false;
 		archivoE.write (reinterpret_cast<const char *>(&nuevo),sizeof (Matricula));
 	}
-	archivoE.close ();
-	LeerPlanEstudio ("h",0);
-	//plan.ClasesDisponibles ();
+		archivoE.close ();
+		LeerPlanEstudio ("h",0);
 	//plan.padre ("MAT102");
 	//cout<<plan.verificarAprobadas (0);
 
 	//clasesR ("",0);
 }
-bool caso1 = true;//Extrae El Padre y lo agrega al arbol
-bool caso2 = false;//agrega sus hijos a un vector y dicho vector se recorre recursivamente
+
 void Archivo::LeerPlanEstudio (string codigo,int posicion) {
 	Matricula lectura{0};
 	for(int i = 0; i < size (Estructura); i++) {
@@ -119,13 +120,7 @@ void Archivo::LeerPlanEstudio (string codigo,int posicion) {
 		return;
 	}
 }
-bool case3 = true;//Caso para las clases sin requisito
-bool case4 = false;//Caso para los idiomas
-bool case5 = false;
 
-vector<MateriaFile>SinRequisitos;
-vector<string>Idiomas;
-vector<string>Hijos;
 void Archivo::LeerPlan2 (string codigo,int posicion) {
 	//clases sin requisito
 	if(case3) {
@@ -233,57 +228,6 @@ bool Archivo::yaAproboHijos (string codigo,int cantidad) {
 	return false;
 }
 
-void Archivo::ClasesDisponibles () {
-	guardarInformacion ();
-	vector<Matricula>aprobadas;
-	for(int i = 0; i < size (Estructura); i++) {
-		if(codigoRepetido (Estructura[i].codigo) == 1 && !claseAprobada (Estructura[i].codigo)) {
-			aprobadas.push_back (obtenerClase (Estructura[i].codigo));
-		} else if(codigoRepetido (Estructura[i].codigo) > 2) {
-			if(yaAproboHijos (Estructura[i].codigo,codigoRepetido (Estructura[i].codigo)) && !claseAprobada (Estructura[i].codigo)) {
-				aprobadas.push_back (obtenerClase (Estructura[i].codigo));
-			}
-		}
-	}
-	for(int i = 0; i < size (Estructura); i++) {
-		if(claseAprobada (Estructura[i].codigo)) {
-			stringstream ss (Estructura[i].nombreHijos);
-			string word;
-			while(ss >> word) {
-				if(word.empty ()) {
-					break;
-				} else {
-					if(!claseAprobada (word) && codigoRepetido (word) == 2) {
-						bool existe = true;
-						for(int i = 0; i < aprobadas.size (); i++) {
-							if(strcmp (aprobadas[i].codigo,word.c_str ()) == 0) {
-								existe = false;
-							}
-						}
-						if(existe) {
-							aprobadas.push_back (obtenerClase (word));
-						}
-					}
-				}
-			}
-		}
-	}
-	cout << endl;
-	for(int i = 0; i < aprobadas.size (); i++) {
-		if(strcmp (aprobadas[i].codigo,"") != 0) {
-			cout << i << ". " << aprobadas[i].codigo << " | ";
-			cout << " " << aprobadas[i].nombre << " | ";
-			cout << " " << aprobadas[i].uv << " | ";
-			cout << endl;
-		}
-	}
-	int posicion = 0;
-	cout << "Escriba la Clase a Matricular: ";
-	cin >> posicion;
-	MatricularClases (aprobadas[posicion].codigo,aprobadas[posicion].nombre,aprobadas[posicion].uv);
-}
-
-
 Matricula Archivo::obtenerClase (string codigo) {
 	ifstream archivoE ("PlanDeEstudio.dat",ios::binary);
 	archivoE.seekg (0,ios::beg);
@@ -316,6 +260,7 @@ bool Archivo::claseAprobada (string codigo) {
 		}
 		archivoH.read (reinterpret_cast<char *>(&lectura),sizeof (Matricula));
 	}
+	archivoH.close ();
 	return false;
 }
 
@@ -358,7 +303,6 @@ void Archivo::modificarNota (string codigo,int nota) {
 	Matricula lectura;
 	archivoE.read (reinterpret_cast<char *>(&lectura),sizeof (Matricula));
 	int posicionregistro = 0;
-
 	while(!archivoE.eof ()) {
 		if(strcmp (lectura.codigo,codigo.c_str ()) == 0 && lectura.nota == 0) {
 			if(nota >= 60) {
@@ -377,7 +321,7 @@ void Archivo::modificarNota (string codigo,int nota) {
 		archivoE.read (reinterpret_cast<char *>(&lectura),sizeof (Matricula));
 	}
 	cout << "Registro No Encontrado";
-	archivoE.close ();
+	//archivoE.close ();
 }
 
 void Archivo::historialAcademico () {
@@ -393,6 +337,7 @@ void Archivo::historialAcademico () {
 		cout << "Codigo: " << lectura.codigo << " Nombre: " << lectura.nombre << " UV: " << lectura.uv << " Status: " << lectura.status << " Nota: " << lectura.nota << endl;
 		archivoE.read (reinterpret_cast<char *>(&lectura),sizeof (Matricula));
 	}
+	cout << "\n";
 	archivoE.close ();
 }
 
