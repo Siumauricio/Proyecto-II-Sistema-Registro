@@ -111,7 +111,6 @@ void PlanEstudio::imprimir () {
 		ImprimirRec (&raiz[0]);
 	} else {
 		for(int i = 0; i <= (*raiz)->posicion; i++) {
-			cout << endl;
 			clases.push_back (raiz[i]);
 			ImprimirRec (&raiz[i]);
 		}
@@ -127,70 +126,80 @@ void PlanEstudio::ImprimirRec (materia **raiz) {
 		ImprimirRec (&(*raiz)->hijos[i]);
 	}
 }
-
 void PlanEstudio::ClasesDisponibles () {
-	Archivo a;
 	cout << "\n\nClases Disponibles: " << endl;
 	for(int i = 0; i < clases.size (); i++) {
 		if(i == 1) {//Caso para las clases sin requisitos
 			yaAproboSinReq (&clases[i]);
 		} else {
 			if(!yaAprobo (clases[i]->codigo)) {
-				cout << " Materia { codigo: " << clases[i]->codigo << ", Nombre: " << clases[i]->nombre << "}" << endl;
-			} else {
+				clasesDisponibles.push_back (clases[i]);
+				//cout << " Materia { codigo: " << clases[i]->codigo << ", Nombre: " << clases[i]->nombre << "}" << endl;
+			}
 				if(raiz[i]->cantHijos == 1) {//Caso para Idiomas
 					yaAproboIdiomas (&raiz[i],raiz[i]->cantHijos);
 				} else {
 					yaAproboSubHijos (&raiz[i]);
-
 				}
-			}
 		}
 	}
 	//a.MatricularClases (clases[0]->codigo,clases[0]->nombre,clases[0]->uv);
 }
-vector<materia *>padress;
-vector<materia *>apro;
-vector<string>verificadas;
-bool vez1 = true;
+void PlanEstudio::subirNota(){
+	Archivo a;
+	ifstream archivoH ("HistorialAcademico.dat",ios::binary);
+	if(!archivoH) {
+		return;
+	}
+	cout << "\n\n--------FINALIZAR PERIODO--------" << endl;
+	Matricula lectura;
+	int nota = 0;
+	archivoH.seekg (0,ios::beg);
+	archivoH.read (reinterpret_cast<char *>(&lectura),sizeof (Matricula));
+	while(!archivoH.eof ()) {
+		if(lectura.nota==0) {
+			cout << " Codigo: " << lectura.codigo << " Nombre: " << lectura.nombre << " UV: " << lectura.uv << endl;
+			cout << "Ingrese Nota:";
+			cin >> nota;
+			a.modificarNota (lectura.codigo,nota);
+		}
+		archivoH.read (reinterpret_cast<char *>(&lectura),sizeof (Matricula));
+	}
+	archivoH.close ();
+}
+
 
 bool PlanEstudio::verificarAprobadas (int contador) {
-	for(int i = 0; i < padress.size (); i++) {
-		if(yaAprobo (padress[i]->codigo)) {
+	for(int i = 0; i < padres.size (); i++) {
+		if(yaAprobo (padres[i]->codigo)) {
 			contador++;
 		}
 	}
-	return contador = (contador == padress.size () && padress.size () != 0) ? true : false;
+	return contador = (contador == padres.size () && padres.size () != 0) ? true : false;
 }
 void PlanEstudio::yaAproboSubHijos (materia **raiz) {
 	if(raiz == 0) {
 		return;
 	}
-	padre ((*raiz)->codigo);
+	Padres ((*raiz)->codigo);
 	if(verificarAprobadas (0)) {
-		if(!yaAprobo(apro[0]->codigo)) {
+		if(!yaAprobo (aprobadas[0]->codigo)) {
 			bool temporal = true;
-			for(int i = 0; i < verificadas.size(); i++) {
-				if(verificadas[i]==apro[0]->codigo){
+			for(int i = 0; i < verificadas.size (); i++) {
+				if(verificadas[i] == aprobadas[0]->codigo) {
 					temporal = false;
 					break;
 				}
 			}
 			if(temporal) {
-				verificadas.push_back (apro[0]->codigo);
-				cout << " Materia { codigo: " << apro[0]->codigo << ", Nombre: " << apro[0]->nombre << "}" << endl;
+				verificadas.push_back (aprobadas[0]->codigo);
+				clasesDisponibles.push_back (aprobadas[0]);
+				//cout << " Materia { codigo: " << apro[0]->codigo << ", Nombre: " << apro[0]->nombre << "}" << endl;
 			}
-			//cout << " Materia { codigo: " << apro[0]->codigo << ", Nombre: " << apro[0]->nombre << "}" << endl;
-			padress.clear ();
-			apro.clear ();
 		}
-		padress.clear ();
-		apro.clear ();
-	} else {
-		padress.clear ();
-		apro.clear ();
-	}
-
+	} 
+	padres.clear ();
+	aprobadas.clear ();
 	for(int i = 0; i < (*raiz)->cantHijos; i++) {
 		//if(!yaAprobo ((*raiz)->hijos[i]->codigo) && yaAprobo ((*raiz)->codigo)) {
 		//	cout << " Materia { codigo: " << (*raiz)->hijos[i]->codigo << ", Nombre: " << (*raiz)->hijos[i]->nombre << "}" << endl;
@@ -198,28 +207,44 @@ void PlanEstudio::yaAproboSubHijos (materia **raiz) {
 		yaAproboSubHijos (&(*raiz)->hijos[i]);
 	}
 }
-void PlanEstudio::padre (string codigo) {
-	padres ((*raiz),codigo);
+void PlanEstudio::Padres (string codigo) {
+	extraerPadres ((*raiz),codigo);
 }
 
-int posicion = 0;
-vector<materia *> PlanEstudio::padres (materia *raiz,string codigo) {
-	int x = sizeof (raiz);
+void PlanEstudio::MatricularClases () {
+	Archivo a;
+	int posicion = 0;
+	for(int i = 0; i < clasesDisponibles.size (); i++) {
+		cout << i << " " << "Codigo: " << clasesDisponibles[i]->codigo << " Nombre: " << clasesDisponibles[i]->nombre << " UV: " << clasesDisponibles[i]->uv << endl;
+	}
+	for(int i = 0; i < 3; i++) {
+		cout << "Ingrese la clase a matricular: ";
+		cin >> posicion;
+		aplicarNota.push_back (clasesDisponibles[posicion]);
+		a.MatricularClases (clasesDisponibles[posicion]->codigo,clasesDisponibles[posicion]->nombre,clasesDisponibles[posicion]->uv);
+
+	}
+	clasesDisponibles.clear ();
+
+	cout << "\n\n";
+}
+
+void PlanEstudio::extraerPadres (materia *raiz,string codigo) {
 	if(raiz == 0) {
-		return padress;
+		return;
 	}
 	for(int i = 0; i < raiz[0].hijos.size (); i++) {
 		if(raiz[0].hijos[i]->codigo == codigo) {
-			apro.push_back (raiz[0].hijos[i]);
-			padress.push_back (raiz);
+			aprobadas.push_back (raiz[0].hijos[i]);
+			padres.push_back (raiz);
 		}
 	}
 	///cout << &*raiz << " " << (*raiz)->nombre << endl;
 	for(int i = 0; i < raiz->cantHijos; i++) {
 		posicion = i;
-		padres (raiz->hijos[i],codigo);
+		extraerPadres (raiz->hijos[i],codigo);
 	}
-	return padress;
+	
 }
 
 
@@ -228,7 +253,8 @@ void PlanEstudio::yaAproboIdiomas (materia **raiz,int contador) {
 		return;
 	}
 	if(!yaAprobo ((*raiz)->codigo) && yaAprobo ((*raiz)->padre)) {
-		cout << " Materia { codigo: " << (*raiz)->codigo << ", Nombre: " << (*raiz)->nombre << "}" << endl;
+		clasesDisponibles.push_back ((*raiz));
+		//cout << " Materia { codigo: " << (*raiz)->codigo << ", Nombre: " << (*raiz)->nombre << "}" << endl;
 	}
 	for(int i = 0; i < (*raiz)->cantHijos; i++) {
 		yaAproboIdiomas (&(*raiz)->hijos[i],contador);
@@ -239,7 +265,8 @@ void PlanEstudio::yaAproboSinReq (materia **raiz) {
 		return;
 	}
 	if(!yaAprobo ((*raiz)->codigo)) {
-		cout << " Materia { codigo: " << (*raiz)->codigo << ", Nombre: " << (*raiz)->nombre << "}" << endl;
+		clasesDisponibles.push_back ((*raiz));
+		//cout << " Materia { codigo: " << (*raiz)->codigo << ", Nombre: " << (*raiz)->nombre << "}" << endl;
 	}
 
 	for(int i = 0; i < (*raiz)->cantHijos; i++) {
@@ -258,6 +285,7 @@ bool PlanEstudio::yaAprobo (string codigo) {
 	archivoH.read (reinterpret_cast<char *>(&lectura),sizeof (Matricula));
 	while(!archivoH.eof ()) {
 		if(strcmp (codigo.c_str (),lectura.codigo) == 0 && lectura.status == true) {
+			archivoH.close ();
 			return true;
 		}
 		archivoH.read (reinterpret_cast<char *>(&lectura),sizeof (Matricula));
