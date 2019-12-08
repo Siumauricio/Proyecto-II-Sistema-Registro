@@ -25,9 +25,10 @@ void Archivo::Menu () {
 		cin >> opcion;
 		switch(opcion) {
 		case 1:
+			a.MostrarPlanEstudio ();
 			break;
 		case 2:
-			a.plan.ClasesDisponibles();
+			a.plan.ClasesDisponibles ();
 			a.plan.MatricularClases ();
 			cout << "\n\n";
 			break;
@@ -47,6 +48,13 @@ void Archivo::Menu () {
 		}
 	} while(cerrar);
 
+}
+void Archivo::MostrarPlanEstudio () {
+	//guardarInformacion ();
+	for(int i = 0; i < size (Estructura); i++) {
+		cout << " Codigo: " << Estructura[i].codigo << " Nombre: " << Estructura[i].nombre << endl;
+	}
+	cout << "\n";
 }
 
 int Archivo::cantidadHijos (string nombre) {
@@ -72,12 +80,8 @@ void Archivo::CrearPlanEstudio () {
 		nuevo.status = false;
 		archivoE.write (reinterpret_cast<const char *>(&nuevo),sizeof (Matricula));
 	}
-		archivoE.close ();
-		LeerPlanEstudio ("h",0);
-	//plan.padre ("MAT102");
-	//cout<<plan.verificarAprobadas (0);
-
-	//clasesR ("",0);
+	archivoE.close ();
+	LeerPlanEstudio ("h",0);
 }
 
 void Archivo::LeerPlanEstudio (string codigo,int posicion) {
@@ -116,12 +120,12 @@ void Archivo::LeerPlanEstudio (string codigo,int posicion) {
 		arr.erase (end,arr.end ());
 		LeerPlanEstudio (arr[posicion],posicion + 1);
 	} else {
-		LeerPlan2 ("",0);
+		LeerPlan2 ("",0,0);
 		return;
 	}
 }
 
-void Archivo::LeerPlan2 (string codigo,int posicion) {
+void Archivo::LeerPlan2 (string codigo,int posicion,int posi) {
 	//clases sin requisito
 	if(case3) {
 		bool primero = true;
@@ -146,10 +150,32 @@ void Archivo::LeerPlan2 (string codigo,int posicion) {
 	for(int i = 0; i < size (Estructura); i++) {
 		if(case4) {
 			if(codigoRepetido (Estructura[i].codigo) == 1 && cantidadHijos (Estructura[i].nombreHijos) == 1) {
-				plan.agregar (Estructura[i].codigo,Estructura[i].nombre,Estructura[i].uv,"");
-				Idiomas.push_back (Estructura[i].codigo);
-				case4 = false;
-				case5 = true;
+				if(hola) {
+					plan.agregar (Estructura[i].codigo,Estructura[i].nombre,Estructura[i].uv,"");
+					ofi.push_back (Estructura[i].codigo);
+					case4 = false;
+					case5 = true;
+				}
+				if(arreglar) {
+					plan.agregar (Estructura[i].codigo,Estructura[i].nombre,Estructura[i].uv,"");
+					Idiomas.push_back (Estructura[i].codigo);
+					arreglar = false;
+					hola = true;
+				}
+			}
+		}
+		if(caso6) {
+			if(strcmp (Estructura[i].codigo,codigo.c_str ()) == 0) {
+				stringstream ss (Estructura[i].nombreHijos);
+				string word;
+				if(Estructura[i].nombreHijos != "") {
+					while(ss >> word) {
+						if(obtenerClase (word).uv != 0) {
+							ofi.push_back (word);
+							plan.agregar (word.c_str (),obtenerClase (word).nombre,obtenerClase (word).uv,codigo.c_str ());
+						}
+					}
+				}
 			}
 		}
 		if(case5) {
@@ -168,27 +194,18 @@ void Archivo::LeerPlan2 (string codigo,int posicion) {
 		}
 	}
 	if(posicion < Idiomas.size ()) {
-		LeerPlan2 (Idiomas[posicion],posicion + 1);
+		LeerPlan2 (Idiomas[posicion],posicion + 1,posi);
 	} else {
-		plan.imprimir ();
-		return;
-	}
-}
+		case5 = false;
+		caso6 = true;
+		if(posi < ofi.size ()) {
+			LeerPlan2 (ofi[posi],posicion,posi + 1);
+		} else {
+			plan.imprimir ();
+			return;
 
-MateriaFile Archivo::obtenerHijos (string codigo) {
-	guardarInformacion ();
-	ifstream archivoH ("PlanDeEstudio.dat",ios::binary);
-	MateriaFile lectura;
-	archivoH.seekg (0,ios::beg);
-	archivoH.read (reinterpret_cast<char *>(&lectura),sizeof (MateriaFile));
-	while(!archivoH.eof ()) {
-		if(strcmp (codigo.c_str (),lectura.codigo) == 0) {
-			return lectura;
 		}
-		archivoH.read (reinterpret_cast<char *>(&lectura),sizeof (MateriaFile));
 	}
-	MateriaFile lectura2{};
-	return lectura2;
 }
 
 int Archivo::codigoRepetido (string codigo) {
@@ -210,24 +227,6 @@ int Archivo::codigoRepetido (string codigo) {
 	return contador;
 }
 
-bool Archivo::yaAproboHijos (string codigo,int cantidad) {
-	int contador = 0;
-	for(int i = 0; i < size (Estructura); i++) {
-		stringstream ss (Estructura[i].nombreHijos);
-		string word;
-		while(ss >> word) {
-			if(codigo == word && claseAprobada (Estructura[i].codigo)) {
-				contador++;
-			}
-		}
-
-	}
-	if(cantidad - 1 == contador) {
-		return true;
-	}
-	return false;
-}
-
 Matricula Archivo::obtenerClase (string codigo) {
 	ifstream archivoE ("PlanDeEstudio.dat",ios::binary);
 	archivoE.seekg (0,ios::beg);
@@ -243,27 +242,6 @@ Matricula Archivo::obtenerClase (string codigo) {
 	lectura = {0};
 	return lectura;
 }
-
-
-bool Archivo::claseAprobada (string codigo) {
-	ifstream archivoH ("HistorialAcademico.dat",ios::binary);
-	if(!archivoH) {
-		//cout << "Error al Leer el archivo";
-		return false;
-	}
-	Matricula lectura;
-	archivoH.seekg (0,ios::beg);
-	archivoH.read (reinterpret_cast<char *>(&lectura),sizeof (Matricula));
-	while(!archivoH.eof ()) {
-		if(strcmp (codigo.c_str (),lectura.codigo) == 0 && lectura.status == true) {
-			return true;
-		}
-		archivoH.read (reinterpret_cast<char *>(&lectura),sizeof (Matricula));
-	}
-	archivoH.close ();
-	return false;
-}
-
 
 void Archivo::MatricularClases (string codigo,string nombre,int UV) {
 	ofstream archivoE ("HistorialAcademico.dat",ios::out | ios::binary | ios::app);
@@ -320,8 +298,9 @@ void Archivo::modificarNota (string codigo,int nota) {
 		posicionregistro++;
 		archivoE.read (reinterpret_cast<char *>(&lectura),sizeof (Matricula));
 	}
+
 	cout << "Registro No Encontrado";
-	//archivoE.close ();
+	archivoE.close ();
 }
 
 void Archivo::historialAcademico () {
