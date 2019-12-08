@@ -22,10 +22,14 @@ public:
 	bool case5 = false;
 	vector<MateriaFile>SinRequisitos;
 	vector<string>Idiomas;
+	vector<string>ofi;
 	vector<string>Hijos;
 	vector<string>arr;
 	PlanEstudio plan;
-	MateriaFile Estructura[21];
+	MateriaFile Estructura[24];
+	bool arreglar = true;
+	bool hola = false;
+	bool caso6 = false;
 	Archivo ();
 	void MatricularClases (string,string,int);
 	void modificarNota (string,int);
@@ -35,14 +39,11 @@ public:
 	void LeerPlanEstudio (string,int);
 	void CrearPlanEstudio ();
 	int codigoRepetido (string);
-	bool yaAproboHijos (string,int);
 	Matricula obtenerClase (string);
-	MateriaFile obtenerHijos (string);
-	void LeerPlan2 (string ,int);
+	void LeerPlan2 (string,int,int);
 	void Menu ();
+	void MostrarPlanEstudio ();
 private:
-	bool claseAprobada (string);
 	void guardarInformacion ();
-	void clasesR (string,int);
 };
 #endif // !ARCHIVO_H
